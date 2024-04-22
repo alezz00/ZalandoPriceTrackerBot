@@ -63,9 +63,7 @@ public class Runner {
 
 		// Fetch all the users
 		for (final File user : userdata.listFiles()) {
-			if (!user.isDirectory()) {
-				continue;
-			}
+			if (!user.isDirectory()) { continue; }
 			final Long userId = Long.valueOf(user.getName());
 
 			final List<TrackedItem> trackedItems = new ArrayList<>();
@@ -77,9 +75,7 @@ public class Runner {
 				TrackedItem item;
 				try {
 					item = utility.getItemFromUrl(userId, oldItem, bot).orElse(null);
-					if (item == null) {
-						continue;
-					}
+					if (item == null) { continue; }
 				} catch (final Throwable t) {
 					// if errors occurred don't stop and continue with other items
 					trackedItems.add(oldItem);
@@ -113,7 +109,7 @@ public class Runner {
 			if (!notifications.isEmpty()) {
 				for (final String notification : notifications) {
 					bot.sendMessage(userId, notification);
-				} // for
+				}
 				final String info = itemsToNotify.stream().map(TrackedItem::getName).collect(Collectors.joining("\n"));
 				utility.insertLog("Message sent: prices lowered for user: %s\n%s".formatted(userId, info));
 			}
@@ -129,13 +125,10 @@ public class Runner {
 	} // checkAndNotify
 
 	/**
-	 * Checks if there are changes that need to be notified and returns the
-	 * notification.
+	 * Checks if there are changes that need to be notified and returns the notification.
 	 */
 	private static Optional<String> buildItemNotification(TrackedItem oldItem, TrackedItem newItem) {
-		if (!newItem.isAvailable()) {
-			return Optional.empty();
-		}
+		if (!newItem.isAvailable()) { return Optional.empty(); }
 
 		final String newPrice = newItem.getPrice();
 
@@ -143,26 +136,17 @@ public class Runner {
 		final String oldPriceToShow = priceLowered(oldItem, newItem);
 		final boolean priceLowered = oldPriceToShow != null;
 
-		if (!priceLowered && !couponAdded) {
-			return Optional.empty();
-		}
+		if (!priceLowered && !couponAdded) { return Optional.empty(); }
 
-		final String history = newItem.getPriceHistory().stream().map(PriceHistory::getPrice)
-				.collect(Collectors.joining(" -> "));
+		final String history = newItem.getPriceHistory().stream().map(PriceHistory::getPrice).collect(Collectors.joining(" -> "));
 
 		final List<String> headers = new ArrayList<>();
-		if (priceLowered) {
-			headers.add("Price lowered");
-		}
-		if (couponAdded) {
-			headers.add("Coupon added");
-		}
+		if (priceLowered) { headers.add("Price lowered"); }
+		if (couponAdded) { headers.add("Coupon added"); }
 		final String headerString = String.join(" + ", headers) + "!";
 
 		final List<String> prices = new ArrayList<>();
-		if (priceLowered) {
-			prices.add(oldPriceToShow);
-		}
+		if (priceLowered) { prices.add(oldPriceToShow); }
 		prices.add(newPrice + (couponAdded ? " + coupon" : ""));
 		final String priceString = String.join(" ---> ", prices);
 
@@ -172,8 +156,7 @@ public class Runner {
 				<b>%s</b>
 				quantity: %s
 				price history: %s
-				%s""".formatted(headerString, newItem.getName(), priceString, newItem.getQuantity(), history,
-				newItem.getUrl());
+				%s""".formatted(headerString, newItem.getName(), priceString, newItem.getQuantity(), history, newItem.getUrl());
 
 		return Optional.of(message);
 	}
@@ -188,24 +171,18 @@ public class Runner {
 			return oldPrice;
 		}
 
-		// or it can be the same price but back in stock, but has to be lower than the
-		// "previous previous"
-		// this can happen if the item goes from 120 to 100 while not in stock, and then
-		// goes back in stock
+		// or it can be the same price but back in stock, but has to be lower than the "previous previous"
+		// this can happen if the item goes from 120 to 100 while not in stock, and then goes back in stock
 		if (Objects.equals(oldPrice, newPrice)) {
 			final List<PriceHistory> oldHistory = new ArrayList<>(oldItem.getPriceHistory());
 
 			oldHistory.remove(oldHistory.size() - 1);
-			if (oldHistory.isEmpty()) {
-				return null;
-			}
+			if (oldHistory.isEmpty()) { return null; }
 			final String firstPrevious = oldHistory.get(oldHistory.size() - 1).getPrice();
 
-			if (!oldItem.isAvailable()
-					&& Double.valueOf(newPrice.replace(",", ".")) < Double.valueOf(firstPrevious.replace(",", "."))
+			if (!oldItem.isAvailable() && Double.valueOf(newPrice.replace(",", ".")) < Double.valueOf(firstPrevious.replace(",", "."))
 					&& !Objects.equals(newPrice, oldItem.getBackInStockNotifiedPrice())) {
-				// in this special case i also checked the last notified price, to avoid double
-				// notifications
+				// in this special case i also checked the last notified price, to avoid double notifications
 				newItem.setBackInStockNotifiedPrice(newPrice);
 				return firstPrevious;
 			}
