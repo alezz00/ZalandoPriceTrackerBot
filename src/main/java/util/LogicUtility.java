@@ -159,11 +159,12 @@ public class LogicUtility {
 				.setHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36")
 				.build();
 
-		final String stringed = client.send(request, BodyHandlers.ofString()).body();
+		final String responseBody = client.send(request, BodyHandlers.ofString()).body();
 
-		return getSizes(new ArrayList<>(), stringed);
+		return getSizes(new ArrayList<>(), responseBody);
 	}
 
+	/** Recursively searches the json objects of the sizes. */
 	private List<String> getSizes(List<String> sizes, String stringed) {
 
 		final String sizeKeyword = "\"size\":\"";
@@ -239,6 +240,7 @@ public class LogicUtility {
 		case "CO.UK" -> "on this and other selected items";
 		case "IE" -> "on this and other selected items";
 		case "IT" -> "su questo e altri articoli selezionati con il codice";
+		case "ES" -> "en este y otros artículos seleccionados con el código";
 		case "DE" -> "auf diesen und andere ausgewählte artikel";
 		case "NL" -> "op dit en andere geselecteerde items";
 		default -> null;
