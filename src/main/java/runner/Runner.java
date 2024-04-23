@@ -40,7 +40,7 @@ public class Runner {
 		// Schedule the logic every 60 minutes
 		scheduleJob(60, TimeUnit.MINUTES);
 
-	} // main
+	}
 
 	private static void scheduleJob(long delay, TimeUnit timeUnit) {
 		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -101,7 +101,7 @@ public class Runner {
 					notifications.add(not);
 					itemsToNotify.add(item);
 				});
-			} // for
+			}
 
 			utility.insertLog("Check executed for %s items. User: %s".formatted(trackedItems.size(), userId));
 
@@ -121,8 +121,8 @@ public class Runner {
 
 			// wait 30 seconds for next user
 			Thread.sleep(1000 * 30);
-		} // for
-	} // checkAndNotify
+		}
+	}
 
 	/**
 	 * Checks if there are changes that need to be notified and returns the notification.
