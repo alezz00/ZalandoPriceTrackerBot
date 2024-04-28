@@ -1,4 +1,4 @@
-# ZalandoPriceTrackerBot [![Bot](https://img.shields.io/badge/Telegram-@ZalandoPriceTrackerBot-blue.svg?style=flat)][Bot]
+# Zalando Price Tracker Bot [![Bot](https://img.shields.io/badge/Telegram-@ZalandoPriceTrackerBot-blue.svg?style=flat)][Bot]
 
 A telegram bot to track price cuts on Zalando
 
