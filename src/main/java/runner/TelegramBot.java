@@ -496,7 +496,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 					https://www.zalando.it/tommy-hilfiger-essential-cupsole-sneakers-basse-white-to112o0ib-a11.html
 					""";
 
-			sendMessage(userId, text);
+			final SendMessage sm = SendMessage.builder()//
+				.parseMode("HTML")//
+				.chatId(userId)//
+				.text(text)//
+				.disableWebPagePreview(true)//
+				.build();
+			exec(sm);
 		}
 	} // myItemsCommand
 
