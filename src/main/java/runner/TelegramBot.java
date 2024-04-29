@@ -488,6 +488,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 			final String text = """
 					Start tracking a new item by sending a message with a nickname that will help you recognize the item.
 					Then in the second line of the same message paste the url!
+
+					Example:
+					Hilfiger white shoes with stripes
+					https://www.zalando.it/tommy-hilfiger-essential-cupsole-sneakers-basse-white-to112o0ib-a11.html
 					""";
 
 			sendMessage(userId, text);
