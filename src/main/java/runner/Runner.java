@@ -62,8 +62,7 @@ public class Runner {
 		boolean anyChange = false;
 
 		// Fetch all the users
-		for (final File user : userdata.listFiles()) {
-			if (!user.isDirectory()) { continue; }
+		for (final File user : userdata.listFiles(File::isDirectory)) {
 			final Long userId = Long.valueOf(user.getName());
 
 			final List<TrackedItem> trackedItems = new ArrayList<>();

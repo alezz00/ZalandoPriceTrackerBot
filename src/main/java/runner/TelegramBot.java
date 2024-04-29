@@ -60,7 +60,11 @@ public class TelegramBot extends TelegramLongPollingBot {
 		try {
 			if (update.hasMessage()) {
 				final Message message = update.getMessage();
-				if (!checkUser(message.getFrom())) { return; }
+				final User user = message.getFrom();
+
+				utility.insertLog(user.getId() + " said: " + message.getText());
+
+				if (!checkUser(user)) { return; }
 
 				helpCommand(message);
 				myItemsCommand(message);
@@ -497,11 +501,11 @@ public class TelegramBot extends TelegramLongPollingBot {
 					""";
 
 			final SendMessage sm = SendMessage.builder()//
-				.parseMode("HTML")//
-				.chatId(userId)//
-				.text(text)//
-				.disableWebPagePreview(true)//
-				.build();
+					.parseMode("HTML")//
+					.chatId(userId)//
+					.text(text)//
+					.disableWebPagePreview(true)//
+					.build();
 			exec(sm);
 		}
 	} // myItemsCommand
