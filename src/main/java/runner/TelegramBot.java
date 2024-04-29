@@ -99,6 +99,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 			if (!isAdmin) {
 				sendMessage(adminId, "New user \"%s\" joined".formatted(user.getFirstName()));
 			}
+			return true;
 		} else {
 
 			if (utility.isUserInApprovalQueue(user)) { return false; }
@@ -129,8 +130,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 					.replyMarkup(keyboard.build())//
 					.build();
 			exec(addUserMessage);
+
+			return false;
 		}
-		return false;
 	}
 
 	/** Callback used when the admin enables a new user. */
