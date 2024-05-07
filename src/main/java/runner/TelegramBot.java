@@ -465,7 +465,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 		// Delete the item
 		final List<TrackedItem> filtered = items.stream().filter(itm -> !Objects.equals(itm.getUuid(), uuid)).toList();
-		utility.saveTrackedItems(userId, items);
+		utility.saveTrackedItems(userId, filtered);
 
 		// Notify the user
 		final SendMessage doneMessage = SendMessage.builder()//
