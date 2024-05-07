@@ -145,11 +145,12 @@ public class LogicUtility {
 
 	/** Saves the specified items for the specified user. */
 	public void saveTrackedItems(Long userId, List<TrackedItem> items) throws Exception {
-		items.sort(Comparator.comparing(TrackedItem::getName));
+		List<TrackedItem> toSave = new ArrayList<>(items);
+		toSave.sort(Comparator.comparing(TrackedItem::getName));
 		final File file = new File(TRACKED_JSON_FILE.formatted(userId));
-		final String json = new GsonBuilder().setPrettyPrinting().create().toJson(new TrackedItems(items));
+		final String json = new GsonBuilder().setPrettyPrinting().create().toJson(new TrackedItems(toSave));
 		FileUtils.write(file, json, Charset.defaultCharset());
-		ITEMS_CACHE.put(userId, items);
+		ITEMS_CACHE.put(userId, toSave);
 	}
 
 	/** Get all the existing sizes for the specified url. */
