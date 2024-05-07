@@ -315,7 +315,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 		String historyText = item.getPriceHistory().stream().map(o -> o.getDate() + " - " + o.getPrice()).collect(Collectors.joining("\n"));
 		historyText = "<b>%s</b>\n".formatted(item.getName()) + historyText;
 		final SendMessage historyMessage = SendMessage.builder()//
-				.chatId(utility.getAdminId())//
+				.chatId(userId)//
 				.parseMode("HTML")//
 				.text(historyText)//
 				.replyMarkup(keyboard.build())//
