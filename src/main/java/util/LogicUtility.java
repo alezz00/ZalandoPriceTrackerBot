@@ -204,8 +204,12 @@ public class LogicUtility {
 		} // if
 
 		// Looks for the json objects in the body
-		final int start = responseBody.indexOf("\"size\":\"%s\"".formatted(size));
+		final int start = responseBody.indexOf("\"simples\":[");
 		String partial = responseBody.substring(start);
+
+		final int startSize = partial.indexOf("\"size\":\"%s\"".formatted(size));
+
+		partial = partial.substring(startSize);		
 		partial = partial.substring(partial.indexOf("\"offer\":"));
 		partial = partial.substring("\"offer\":".length());
 		partial = partial.substring(0, partial.indexOf(",\"allOffers\""));
