@@ -247,6 +247,7 @@ public class LogicUtility {
 		case "IT" -> "su questo e altri articoli selezionati con il codice";
 		case "ES" -> "en este y otros artículos seleccionados con el código";
 		case "DE" -> "auf diesen und andere ausgewählte artikel";
+		case "FR" -> "sur cet article et bien d’autres";
 		case "NL" -> "op dit en andere geselecteerde items";
 		default -> null;
 		};
