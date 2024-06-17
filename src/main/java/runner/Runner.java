@@ -159,30 +159,33 @@ public class Runner {
 
 		return Optional.of(message);
 	}
-
+	
 	/** Checks if the price lowered and returns the previous price. */
 	private static String priceLowered(TrackedItem oldItem, TrackedItem newItem) {
-		final String oldPrice = oldItem.getPrice();
-		final String newPrice = newItem.getPrice();
+		final String oldPriceString = oldItem.getPrice();
+		final String newPriceString = newItem.getPrice();
+		final Double oldPrice = Double.valueOf(oldPriceString.replace(",", "."));
+		final Double newPrice = Double.valueOf(newPriceString.replace(",", "."));
+
+		final boolean lowered = oldPrice - newPrice > 1;
 
 		// if lower than the previous -> ok
-		if (Double.valueOf(newPrice.replace(",", ".")) < Double.valueOf(oldPrice.replace(",", "."))) {
-			return oldPrice;
+		if (lowered) {
+			return oldPriceString;
 		}
 
-		// or it can be the same price but back in stock, but has to be lower than the "previous previous"
+		// or it can be the same price but back in stock, but has to be lower than the second-last
 		// this can happen if the item goes from 120 to 100 while not in stock, and then goes back in stock
-		if (Objects.equals(oldPrice, newPrice)) {
+		if (Objects.equals(oldPriceString, newPriceString)) {
 			final List<PriceHistory> oldHistory = new ArrayList<>(oldItem.getPriceHistory());
 
 			oldHistory.remove(oldHistory.size() - 1);
 			if (oldHistory.isEmpty()) { return null; }
 			final String firstPrevious = oldHistory.get(oldHistory.size() - 1).getPrice();
 
-			if (!oldItem.isAvailable() && Double.valueOf(newPrice.replace(",", ".")) < Double.valueOf(firstPrevious.replace(",", "."))
-					&& !Objects.equals(newPrice, oldItem.getBackInStockNotifiedPrice())) {
-				// in this special case i also checked the last notified price, to avoid double notifications
-				newItem.setBackInStockNotifiedPrice(newPrice);
+			// in this special case i also check the last notified price, to avoid double notifications
+			if (!oldItem.isAvailable() && lowered && !Objects.equals(newPriceString, oldItem.getBackInStockNotifiedPrice())) {
+				newItem.setBackInStockNotifiedPrice(newPriceString);
 				return firstPrevious;
 			}
 		}
