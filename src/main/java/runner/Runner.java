@@ -181,12 +181,13 @@ public class Runner {
 
 			oldHistory.remove(oldHistory.size() - 1);
 			if (oldHistory.isEmpty()) { return null; }
-			final String firstPrevious = oldHistory.get(oldHistory.size() - 1).getPrice();
+			final String firstPreviousString = oldHistory.get(oldHistory.size() - 1).getPrice();
+			final Double firstPrevious = Double.valueOf(firstPreviousString.replace(",", "."));
 
 			// in this special case i also check the last notified price, to avoid double notifications
-			if (!oldItem.isAvailable() && lowered && !Objects.equals(newPriceString, oldItem.getBackInStockNotifiedPrice())) {
+			if (!oldItem.isAvailable() && (firstPrevious - newPrice > 1) && !Objects.equals(newPriceString, oldItem.getBackInStockNotifiedPrice())) {
 				newItem.setBackInStockNotifiedPrice(newPriceString);
-				return firstPrevious;
+				return firstPreviousString;
 			}
 		}
 
