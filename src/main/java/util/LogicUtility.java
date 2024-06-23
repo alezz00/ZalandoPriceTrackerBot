@@ -161,8 +161,10 @@ public class LogicUtility {
 				.build();
 
 		final String responseBody = client.send(request, BodyHandlers.ofString()).body();
+		final int start = responseBody.indexOf("\"simples\":[");
+		final String stringed = responseBody.substring(start);
 
-		return getSizes(new ArrayList<>(), responseBody);
+		return getSizes(new ArrayList<>(), stringed);
 	}
 
 	/** Recursively searches the json objects of the sizes. */
