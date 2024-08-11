@@ -523,28 +523,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 		exec(sm);
 	} // sendMessage
 
-	/** Sends an html file with the price history chart. */
-	private void sendChart(Long userId, TrackedItem item) throws Exception {
-		// TODO
-//		List<String> data = item.getPriceHistory().stream()//
-//				.map(his -> {
-//					final String[] dateParts = his.getDate().split("-");
-//					final String date = "%s/%s/%s".formatted(dateParts[0], dateParts[1], dateParts[2].substring(2));
-//					final String price = his.getPrice().replace(",", ".");
-//					return "['%s', %s]".formatted(date, price);
-//				}).toList();
-//
-//
-//		final InputFile file = new InputFile(new ByteArrayInputStream(html.getBytes()), "%s.html".formatted(item.getName()));
-//
-//		final SendDocument sd = SendDocument.builder()//
-//				.chatId(userId)//
-//				.document(file)//
-//				.build();
-//
-//		execute(sd);
-	}
-
 	private <T extends Serializable, Method extends BotApiMethod<T>> T exec(Method method) throws Exception {
 		try {
 			return execute(method);

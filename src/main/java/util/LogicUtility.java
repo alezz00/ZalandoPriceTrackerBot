@@ -7,16 +7,19 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -30,6 +33,8 @@ import com.google.gson.GsonBuilder;
 import pojo.Offer;
 import pojo.Offer.InnerPrice;
 import pojo.Offer.Price;
+import pojo.Size;
+import pojo.Sizes;
 import pojo.TrackedItem;
 import pojo.TrackedItem.PriceHistory;
 import pojo.TrackedItems;
@@ -145,7 +150,7 @@ public class LogicUtility {
 
 	/** Saves the specified items for the specified user. */
 	public void saveTrackedItems(Long userId, List<TrackedItem> items) throws Exception {
-		List<TrackedItem> toSave = new ArrayList<>(items);
+		final List<TrackedItem> toSave = new ArrayList<>(items);
 		toSave.sort(Comparator.comparing(TrackedItem::getName));
 		final File file = new File(TRACKED_JSON_FILE.formatted(userId));
 		final String json = new GsonBuilder().setPrettyPrinting().create().toJson(new TrackedItems(toSave));
@@ -153,39 +158,55 @@ public class LogicUtility {
 		ITEMS_CACHE.put(userId, toSave);
 	}
 
-	/** Get all the existing sizes for the specified url. */
-	public List<String> getSizesFromUrl(String url) throws Exception {
+	private HttpResponse<String> httpGet(String url) throws Exception {
 		final HttpClient client = HttpClient.newHttpClient();
 		final HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 				.setHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36")
 				.build();
 
-		final String responseBody = client.send(request, BodyHandlers.ofString()).body();
-		final int start = responseBody.indexOf("\"simples\":[");
-		final String stringed = responseBody.substring(start);
-
-		return getSizes(new ArrayList<>(), stringed);
+		return client.send(request, BodyHandlers.ofString());
 	}
 
-	/** Recursively searches the json objects of the sizes. */
-	private List<String> getSizes(List<String> sizes, String stringed) {
+	/** Get all the existing sizes for the specified url. */
+	public List<String> getSizesFromUrl(String url) throws Exception {
+		final String responseBody = httpGet(url).body();
+		return getSizesFromBody(responseBody).stream().map(s -> s.size).toList();
+	}
 
-		final String sizeKeyword = "\"size\":\"";
+	/** Gets all the item sizes from the specified body. */
+	private List<Size> getSizesFromBody(String body) {
+		final String size = "\"size\":";
+		final String simples = "\"simples\":";
 
-		if (!stringed.contains(sizeKeyword)) { return sizes; }
+		// the body has a json with all the info so i look for it
 
-		final int start = stringed.indexOf(sizeKeyword);
-		String partial = stringed.substring(start);
-		partial = partial.substring(sizeKeyword.length());
+		final int start = body.indexOf(simples);
+		if (start < 0) { return Collections.emptyList(); }
 
-		final String size = partial.substring(0, partial.indexOf("\""));
+		String partial = body.substring(start);
+		partial = partial.substring(partial.indexOf("["));
+		int openBrackets = 0;
+		int closedBrackets = 0;
+		int arrayEndIndex = -1;
 
-		if (sizes.contains(size)) {
-			return sizes;
-		} else {
-			sizes.add(size);
-			return getSizes(sizes, partial);
+		for (int i = 0; i < partial.length(); i++) {
+			final String character = String.valueOf(partial.charAt(i));
+
+			if (Objects.equals(character, "[")) { openBrackets++; }
+			if (Objects.equals(character, "]")) { closedBrackets++; }
+
+			if (openBrackets > 1 && openBrackets == closedBrackets) {
+				arrayEndIndex = i;
+				break;
+			}
 		}
+
+		final String stringedArray = partial.substring(0, arrayEndIndex + 1);
+		if (!stringedArray.contains(size)) { return getSizesFromBody(partial); }
+
+		final String simplesJson = "{" + simples + stringedArray + "}";
+		final Sizes sizes = new Gson().fromJson(simplesJson, Sizes.class);
+		return sizes.simples;
 	}
 
 	/** Fetches the specified item from its url. */
@@ -193,30 +214,20 @@ public class LogicUtility {
 		final String url = item.getUrl();
 		final String size = item.getSize();
 
-		final HttpClient client = HttpClient.newHttpClient();
-		final HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-				.setHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36")
-				.build();
+		final HttpResponse<String> response = httpGet(url);
+		final String responseBody = response.body();
+		final List<Size> sizes = getSizesFromBody(responseBody);
 
-		final String responseBody = client.send(request, BodyHandlers.ofString()).body();
-
-		if (!responseBody.contains("\"size\":")) {
-			bot.sendMessage(userId, "It appears that the item \"%s\" is no longer available at the specified url :(".formatted(item.getName()));
+		if (response.statusCode() == 404 || sizes.isEmpty()) {
+			final String msg = """
+					"It appears that the item \"%s\" is no longer available at the specified url :("
+					Consider deleting the item from your list if this error persists""".formatted(item.getName());
+			bot.sendMessage(userId, msg);
 			return Optional.empty();
 		} // if
 
-		// Looks for the json objects in the body
-		final int start = responseBody.indexOf("\"simples\":[");
-		String partial = responseBody.substring(start);
-
-		final int startSize = partial.indexOf("\"size\":\"%s\"".formatted(size));
-
-		partial = partial.substring(startSize);		
-		partial = partial.substring(partial.indexOf("\"offer\":"));
-		partial = partial.substring("\"offer\":".length());
-		partial = partial.substring(0, partial.indexOf(",\"allOffers\""));
-		final String json = partial.replace(",\"allOffers\"", "");
-		final Offer offer = new Gson().fromJson(json, Offer.class);
+		final Size found = sizes.stream().filter(s -> Objects.equals(s.size, size)).findFirst().orElseThrow();
+		final Offer offer = found.offer;
 
 		final Price options = offer.price;
 		final InnerPrice priceObj = options.promotional == null ? options.original : options.promotional;
@@ -260,12 +271,14 @@ public class LogicUtility {
 	/**
 	 * Saves the stacktrace in a text file.
 	 *
-	 * @param th  The exception
-	 * @param bot The bot that will be used to notify the admin
+	 * @param th             The exception
+	 * @param bot            The bot that will be used to notify the admin
+	 * @param additionalInfo Optional additional information to be printed
 	 */
-	public void insertErrorLog(Throwable th, TelegramBot bot) {
+	public void insertErrorLog(Throwable th, TelegramBot bot, Object... additionalInfo) {
 		try {
 			final List<String> list = new ArrayList<>();
+			if (additionalInfo != null) { Stream.of(additionalInfo).map(Object::toString).forEach(list::add); }
 			list.add(th.getMessage());
 			list.addAll(Stream.of(th.getStackTrace()).map(Object::toString).toList());
 
@@ -283,7 +296,7 @@ public class LogicUtility {
 			final File file = new File(path + fileName);
 			String existing = "";
 
-			final String log = now.truncatedTo(ChronoUnit.SECONDS) + " " + message;
+			final String log = "\n" + now.truncatedTo(ChronoUnit.SECONDS) + " " + message;
 
 			if (file.exists()) {
 				existing = FileUtils.readFileToString(file, Charset.defaultCharset()) + "\n";

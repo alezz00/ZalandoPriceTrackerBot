@@ -39,7 +39,6 @@ public class Runner {
 
 		// Schedule the logic every 60 minutes
 		scheduleJob(60, TimeUnit.MINUTES);
-
 	}
 
 	private static void scheduleJob(long delay, TimeUnit timeUnit) {
@@ -78,7 +77,7 @@ public class Runner {
 				} catch (final Throwable t) {
 					// if errors occurred don't stop and continue with other items
 					trackedItems.add(oldItem);
-					utility.insertErrorLog(t, bot);
+					utility.insertErrorLog(t, bot, userId, oldItem.getName());
 					continue;
 				}
 
@@ -159,7 +158,7 @@ public class Runner {
 
 		return Optional.of(message);
 	}
-	
+
 	/** Checks if the price lowered and returns the previous price. */
 	private static String priceLowered(TrackedItem oldItem, TrackedItem newItem) {
 		final String oldPriceString = oldItem.getPrice();
