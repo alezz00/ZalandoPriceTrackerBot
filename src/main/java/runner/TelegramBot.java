@@ -67,6 +67,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 				if (!checkUser(user)) { return; }
 
 				helpCommand(message);
+				aboutCommand(message);
 				myItemsCommand(message);
 				addItem(message);
 
@@ -186,9 +187,12 @@ public class TelegramBot extends TelegramLongPollingBot {
 			alertText = "Bad request";
 		} else {
 			alertText = "Item added!";
-			final String userText = message.getReplyToMessage().getText().trim();
-			final String name = userText.split("\n")[0].trim();
-			final String url = userText.split("\n")[1].trim();
+			final List<String> split = Stream.of(message.getReplyToMessage().getText().split("\n"))//
+					.map(String::trim)//
+					.filter(s -> !s.isEmpty())//
+					.toList();
+			final String name = split.get(0);
+			final String url = split.get(1);
 
 			final TrackedItem toAddTemp = new TrackedItem(UUID.randomUUID().toString(), name, url, size, null, null, false, false);
 
@@ -233,14 +237,14 @@ public class TelegramBot extends TelegramLongPollingBot {
 	private void addItem(Message message) throws Exception {
 
 		// i'm expecting an alias for the item in the first row and the url in the second row
-		final String text = message.getText().trim();
-		if (!text.contains("\n")) { return; }
+		final List<String> split = Stream.of(message.getText().split("\n"))//
+				.map(String::trim)//
+				.filter(s -> !s.isEmpty())//
+				.toList();
 
-		final String[] split = text.split("\n");
-		if (split.length != 2) { return; }
+		if (split.size() != 2) { return; }
 
-		final String url = split[1].trim();
-
+		final String url = split.get(1);
 		if (!url.startsWith("https://www.zalando.")) { return; }
 
 		final InlineKeyboardMarkupBuilder keyboard = InlineKeyboardMarkup.builder();
@@ -508,7 +512,29 @@ public class TelegramBot extends TelegramLongPollingBot {
 					.build();
 			exec(sm);
 		}
-	} // myItemsCommand
+	}
+
+	/** /about Command */
+	private void aboutCommand(Message msg) throws Exception {
+		if (!msg.isCommand() || !"/about".equals(msg.getText())) { return; }
+
+		final Long userId = msg.getFrom().getId();
+
+		final String text = """
+				Hi! My name is Alessio and I am an italian developer :)
+				This project was born in 2023 to help me and my friends buy from zalando at lower prices and getting notified about price drops without constantly checking the website.
+
+				If you like the bot and it has been useful for you, you can show your support with a donation. Any help is appreciated!
+				https://www.paypal.com/paypalme/lyzedd""";
+
+		final SendMessage sm = SendMessage.builder()//
+				.parseMode("HTML")//
+				.chatId(userId)//
+				.text(text)//
+				.disableWebPagePreview(true)//
+				.build();
+		exec(sm);
+	}
 
 	public void sendMessage(Long userId, String message) throws Exception {
 		sendMessage(userId.toString(), message);
@@ -521,7 +547,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 				.text(message)//
 				.build();
 		exec(sm);
-	} // sendMessage
+	}
 
 	private <T extends Serializable, Method extends BotApiMethod<T>> T exec(Method method) throws Exception {
 		try {
