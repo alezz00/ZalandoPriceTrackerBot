@@ -161,7 +161,11 @@ public class LogicUtility {
 	private HttpResponse<String> httpGet(String url) throws Exception {
 		final HttpClient client = HttpClient.newHttpClient();
 		final HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-				.setHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36")
+				.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0")//
+				.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")//
+				.setHeader("Sec-Fetch-Dest", "document")//
+				.setHeader("Sec-Fetch-Mode", "navigate")//
+				.setHeader("Sec-Fetch-Site", "cross-site")//
 				.build();
 
 		return client.send(request, BodyHandlers.ofString());

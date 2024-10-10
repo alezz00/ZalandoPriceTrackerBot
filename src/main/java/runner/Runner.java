@@ -117,8 +117,8 @@ public class Runner {
 				utility.saveTrackedItems(userId, trackedItems);
 			}
 
-			// wait 15 seconds for next user
-			Thread.sleep(1000 * 15);
+			// wait 10 seconds for next user
+			Thread.sleep(1000 * 10);
 		}
 	}
 
