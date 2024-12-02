@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
@@ -30,6 +31,8 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import exceptions.ItemRemovedException;
+import exceptions.SizeRemovedException;
 import pojo.Offer;
 import pojo.Offer.InnerPrice;
 import pojo.Offer.Price;
@@ -58,7 +61,7 @@ public class LogicUtility {
 	private final Map<String, Object> config;
 
 	// i use a map to reduce file reads
-	private static final Map<Long, List<TrackedItem>> ITEMS_CACHE = new HashMap<>();
+	private static final Map<Long, List<TrackedItem>> ITEMS_CACHE = new ConcurrentHashMap<>();
 
 	/** Users waiting to be enabled. Useful to get the full user object after the admin approval callback */
 	private static final Map<Long, User> USERS_APPROVAL_QUEUE = new HashMap<>();
@@ -213,8 +216,13 @@ public class LogicUtility {
 		return sizes.simples;
 	}
 
-	/** Fetches the specified item from its url. */
-	public Optional<TrackedItem> getItemFromUrl(Long userId, TrackedItem item, TelegramBot bot) throws Exception {
+	/**
+	 * Fetches the specified item from its url.
+	 *
+	 * @throws ItemRemovedException if the item is no longer available.
+	 * @throws SizeRemovedException if the size is no longer available.
+	 */
+	public TrackedItem getItemFromUrl(Long userId, TrackedItem item, TelegramBot bot) throws Exception {
 		final String url = item.getUrl();
 		final String size = item.getSize();
 
@@ -223,14 +231,10 @@ public class LogicUtility {
 		final List<Size> sizes = getSizesFromBody(responseBody);
 
 		if (response.statusCode() == 404 || sizes.isEmpty()) {
-			final String msg = """
-					"It appears that the item \"%s\" is no longer available at the specified url :("
-					Consider deleting the item from your list if this error persists""".formatted(item.getName());
-			bot.sendMessage(userId, msg);
-			return Optional.empty();
+			throw new ItemRemovedException();
 		} // if
 
-		final Size found = sizes.stream().filter(s -> Objects.equals(s.size, size)).findFirst().orElseThrow();
+		final Size found = sizes.stream().filter(s -> Objects.equals(s.size, size)).findFirst().orElseThrow(SizeRemovedException::new);
 		final Offer offer = found.offer;
 
 		final Price options = offer.price;
@@ -248,7 +252,7 @@ public class LogicUtility {
 		final String date = "%s-%s-%s".formatted(now.getDayOfMonth(), now.getMonthValue(), now.getYear());
 		fetchedItem.setPriceHistory(new ArrayList<>(Arrays.asList(new PriceHistory(price, date))));
 
-		return Optional.of(fetchedItem);
+		return fetchedItem;
 	}
 
 	/** Returns the substring used to search for coupons in the response body. */

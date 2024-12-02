@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import exceptions.ItemRemovedException;
+import exceptions.SizeRemovedException;
 import pojo.TrackedItem;
 import pojo.TrackedItem.PriceHistory;
 import util.LogicUtility;
@@ -54,28 +56,42 @@ public class Runner {
 	}
 
 	private static void run() throws Exception {
-		utility.insertLog("*** Starting to check ***");
-
-		final File userdata = new File(LogicUtility.CURRENT_FOLDER + "/userdata");
+		utility.insertLog("* Starting to check *");
 
 		boolean anyChange = false;
+		int allItemsSize = 0;
 
 		// Fetch all the users
-		for (final File user : userdata.listFiles(File::isDirectory)) {
+		final File userdata = new File(LogicUtility.CURRENT_FOLDER + "/userdata");
+		final File[] users = userdata.listFiles(File::isDirectory);
+
+		for (final File user : users) {
 			final Long userId = Long.valueOf(user.getName());
 
 			final List<TrackedItem> trackedItems = new ArrayList<>();
 			final List<String> notifications = new ArrayList<>();
 			final List<TrackedItem> itemsToNotify = new ArrayList<>();
 
-			// for each item
+			// fetch each item
 			for (final TrackedItem oldItem : utility.getTrackedItems(userId)) {
+				allItemsSize++;
 				TrackedItem item;
 				try {
-					item = utility.getItemFromUrl(userId, oldItem, bot).orElse(null);
-					if (item == null) { continue; }
+					item = utility.getItemFromUrl(userId, oldItem, bot);
+				} catch (final ItemRemovedException e) {
+					final String msg = """
+							"It appears that the item \"%s\" is no longer available at the specified url :("
+							Consider deleting the item from your list if this error persists""".formatted(oldItem.getName());
+					bot.sendMessage(userId, msg);
+					continue;
+				} catch (final SizeRemovedException e) {
+					final String msg = """
+							"It appears that the size %s is no longer available for item \"%s\":("
+							Consider deleting the item from your list if this error persists""".formatted(oldItem.getSize(), oldItem.getName());
+					bot.sendMessage(userId, msg);
+					continue;
 				} catch (final Throwable t) {
-					// if errors occurred don't stop and continue with other items
+					// if unmaneged exception occurred don't stop and continue with other items
 					trackedItems.add(oldItem);
 					utility.insertErrorLog(t, bot, userId, oldItem.getName());
 					continue;
@@ -83,7 +99,7 @@ public class Runner {
 
 				anyChange = anyChange || item.anyChange(oldItem);
 
-				// Keep the price history
+				// Update the price history
 				final ArrayList<PriceHistory> priceHistory = oldItem.getPriceHistory();
 				if (!Objects.equals(item.getPrice(), oldItem.getPrice())) {
 					priceHistory.add(item.getPriceHistory().get(0));
@@ -91,7 +107,7 @@ public class Runner {
 				item.setPriceHistory(priceHistory);
 				item.setBackInStockNotifiedPrice(oldItem.getBackInStockNotifiedPrice());
 
-				// Replace the item
+				// Add fetched item to the new list
 				trackedItems.add(item);
 
 				// Check if the item needs to be notified
@@ -100,8 +116,6 @@ public class Runner {
 					itemsToNotify.add(item);
 				});
 			}
-
-			utility.insertLog("Check executed for %s items. User: %s".formatted(trackedItems.size(), userId));
 
 			// Send the notifications
 			if (!notifications.isEmpty()) {
@@ -120,6 +134,8 @@ public class Runner {
 			// wait 10 seconds for next user
 			Thread.sleep(1000 * 10);
 		}
+
+		utility.insertLog("*** Check executed for %s users and a total of %s items ***".formatted(users.length, allItemsSize));
 	}
 
 	/**

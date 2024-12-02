@@ -199,11 +199,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 			final List<TrackedItem> items = utility.getTrackedItems(userId);
 
 			if (items.stream().noneMatch(itm -> Objects.equals(toAddTemp.getUrl(), itm.getUrl()) && Objects.equals(toAddTemp.getSize(), itm.getSize()))) {
-				final TrackedItem toAdd = utility.getItemFromUrl(userId, toAddTemp, this).orElse(null);
-				if (toAdd != null) {
-					items.add(toAdd);
-					utility.saveTrackedItems(userId, items);
-				}
+				final TrackedItem toAdd = utility.getItemFromUrl(userId, toAddTemp, this);
+				items.add(toAdd);
+				utility.saveTrackedItems(userId, items);
 			} else {
 				alertText = "You are already tracking this item!";
 				deleteMessages = false;
