@@ -156,6 +156,7 @@ public class LogicUtility {
 				insertLog("User deleted: " + userId);
 			}
 		}
+		USERS_TO_DELETE.clear();
 	}
 
 	/** Returns the items tracked by the specified user. */
