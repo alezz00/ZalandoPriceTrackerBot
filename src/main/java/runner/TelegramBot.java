@@ -535,16 +535,25 @@ public class TelegramBot extends TelegramLongPollingBot {
 	}
 
 	public void sendMessage(Long userId, String message) throws Exception {
-		sendMessage(userId.toString(), message);
-	}
-
-	public void sendMessage(String userId, String message) throws Exception {
 		final SendMessage sm = SendMessage.builder()//
 				.parseMode("HTML")//
 				.chatId(userId)//
 				.text(message)//
 				.build();
-		exec(sm);
+
+		try {
+			exec(sm);
+
+		} catch (final Exception e) {
+			// delete the user if the bot was blocked
+			final boolean deleteUser = e.getMessage().contains("bot was blocked by the user");
+
+			if (deleteUser) {
+				utility.addUserToDelete(userId);
+			} else {
+				throw e;
+			}
+		}
 	}
 
 	private <T extends Serializable, Method extends BotApiMethod<T>> T exec(Method method) throws Exception {
@@ -559,9 +568,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 			if (retry) {
 				Thread.sleep(6000);
 				return execute(method);
-			} else {
-				throw e;
 			}
+			throw e;
 		}
 	}
 

@@ -56,10 +56,13 @@ public class Runner {
 	}
 
 	private static void run() throws Exception {
-		utility.insertLog("* Starting to check *");
+		// delete the marked users
+		utility.deleteUsers();
+
+		utility.insertLog("\t\t* Starting to check *");
 
 		boolean anyChange = false;
-		int allItemsSize = 0;
+		int totalItemsSize = 0;
 
 		// Fetch all the users
 		final File userdata = new File(LogicUtility.CURRENT_FOLDER + "/userdata");
@@ -74,24 +77,22 @@ public class Runner {
 
 			// fetch each item
 			for (final TrackedItem oldItem : utility.getTrackedItems(userId)) {
-				allItemsSize++;
+				totalItemsSize++;
 				TrackedItem item;
 				try {
 					item = utility.getItemFromUrl(userId, oldItem, bot);
 				} catch (final ItemRemovedException e) {
-					final String msg = """
+					bot.sendMessage(userId, """
 							"It appears that the item \"%s\" is no longer available at the specified url :("
-							Consider deleting the item from your list if this error persists""".formatted(oldItem.getName());
-					bot.sendMessage(userId, msg);
+							Consider deleting the item from your list if this error persists""".formatted(oldItem.getName()));
 					continue;
 				} catch (final SizeRemovedException e) {
-					final String msg = """
+					bot.sendMessage(userId, """
 							"It appears that the size %s is no longer available for item \"%s\":("
-							Consider deleting the item from your list if this error persists""".formatted(oldItem.getSize(), oldItem.getName());
-					bot.sendMessage(userId, msg);
+							Consider deleting the item from your list if this error persists""".formatted(oldItem.getSize(), oldItem.getName()));
 					continue;
 				} catch (final Throwable t) {
-					// if unmaneged exception occurred don't stop and continue with other items
+					// if unmanaged exception occurred don't stop and continue with other items
 					trackedItems.add(oldItem);
 					utility.insertErrorLog(t, bot, userId, oldItem.getName());
 					continue;
@@ -135,7 +136,7 @@ public class Runner {
 			Thread.sleep(1000 * 10);
 		}
 
-		utility.insertLog("*** Check executed for %s users and a total of %s items ***".formatted(users.length, allItemsSize));
+		utility.insertLog("\t\t*** Check executed for %s users and a total of %s items ***".formatted(users.length, totalItemsSize));
 	}
 
 	/**

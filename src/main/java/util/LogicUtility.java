@@ -17,10 +17,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -65,6 +67,8 @@ public class LogicUtility {
 
 	/** Users waiting to be enabled. Useful to get the full user object after the admin approval callback */
 	private static final Map<Long, User> USERS_APPROVAL_QUEUE = new HashMap<>();
+
+	private static final Set<Long> USERS_TO_DELETE = new HashSet<>();
 
 	public LogicUtility() throws Exception {
 		final InputStream inputStream = new FileInputStream(CONFIG_FILE);
@@ -135,6 +139,23 @@ public class LogicUtility {
 		final String infoFile = CURRENT_FOLDER + "/userdata/%s/info.txt".formatted(userId);
 		final File file = new File(infoFile);
 		FileUtils.write(file, userInfo, Charset.defaultCharset());
+	}
+
+	/** Marks the user for removal. */
+	public void addUserToDelete(Long userId) {
+		USERS_TO_DELETE.add(userId);
+	}
+
+	/** Deletes the users marked for removal. */
+	public void deleteUsers() throws Exception {
+		for (final Long userId : USERS_TO_DELETE) {
+			ITEMS_CACHE.remove(userId);
+			final File folder = new File(CURRENT_FOLDER + "/userdata/" + userId);
+			if (folder.exists()) {
+				FileUtils.deleteDirectory(folder);
+				insertLog("User deleted: " + userId);
+			}
+		}
 	}
 
 	/** Returns the items tracked by the specified user. */
