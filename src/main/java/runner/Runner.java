@@ -56,9 +56,6 @@ public class Runner {
 	}
 
 	private static void run() throws Exception {
-		// delete the marked users
-		utility.deleteUsers();
-
 		utility.insertLog("\t\t* Starting to check *");
 
 		boolean anyChange = false;
@@ -137,6 +134,9 @@ public class Runner {
 		}
 
 		utility.insertLog("\t\t*** Check executed for %s users and a total of %s items ***".formatted(users.length, totalItemsSize));
+
+		// delete the marked users
+		utility.deleteUsers();
 	}
 
 	/**

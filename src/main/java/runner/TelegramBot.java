@@ -243,7 +243,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 		if (split.size() != 2) { return; }
 
 		final String url = split.get(1);
-		if (!url.startsWith("https://www.zalando.")) { return; }
+		if (!url.contains("https://") || !url.contains("zalando.")) { return; }
 
 		final InlineKeyboardMarkupBuilder keyboard = InlineKeyboardMarkup.builder();
 
