@@ -270,9 +270,12 @@ public class LogicUtility {
 		// Create the new item
 		final TrackedItem fetchedItem = new TrackedItem(item.getUuid(), item.getName(), url, size, price, offer.stock.quantity, offer.isMeaningfulOffer, hasCoupon);
 
+		// if out of stock then keep the old price to avoid tracking useless information
+		if (!fetchedItem.isAvailable()) { fetchedItem.setPrice(item.getPrice()); }
+
 		final LocalDateTime now = LocalDateTime.now();
 		final String date = "%s-%s-%s".formatted(now.getDayOfMonth(), now.getMonthValue(), now.getYear());
-		fetchedItem.setPriceHistory(new ArrayList<>(Arrays.asList(new PriceHistory(price, date))));
+		fetchedItem.setPriceHistory(new ArrayList<>(Arrays.asList(new PriceHistory(fetchedItem.getPrice(), date))));
 
 		return fetchedItem;
 	}

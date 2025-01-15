@@ -84,8 +84,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
 			}
 
-		} catch (final Exception e) {
-			utility.insertErrorLog(e, this);
+		} catch (final Throwable t) {
+			utility.insertErrorLog(t, this);
 		}
 	}
 
@@ -544,14 +544,14 @@ public class TelegramBot extends TelegramLongPollingBot {
 		try {
 			exec(sm);
 
-		} catch (final Exception e) {
+		} catch (final Throwable t) {
 			// delete the user if the bot was blocked
-			final boolean deleteUser = e.getMessage().contains("bot was blocked by the user");
+			final boolean deleteUser = t.getMessage().contains("bot was blocked by the user");
 
 			if (deleteUser) {
 				utility.addUserToDelete(userId);
 			} else {
-				throw e;
+				throw t;
 			}
 		}
 	}
@@ -559,17 +559,17 @@ public class TelegramBot extends TelegramLongPollingBot {
 	private <T extends Serializable, Method extends BotApiMethod<T>> T exec(Method method) throws Exception {
 		try {
 			return execute(method);
-		} catch (final Exception e) {
+		} catch (final Throwable t) {
 			// if the error is caused by network problems i wait and retry
-			final boolean retry = e.getMessage().contains("Connection timed out") || e.getMessage().contains("Network is unreachable")
-					|| (e.getCause() != null && e.getCause().getMessage().contains("Connection timed out"))
-					|| (e.getCause() != null && e.getCause().getMessage().contains("Network is unreachable"));
+			final boolean retry = t.getMessage().contains("Connection timed out") || t.getMessage().contains("Network is unreachable")
+					|| (t.getCause() != null && t.getCause().getMessage().contains("Connection timed out"))
+					|| (t.getCause() != null && t.getCause().getMessage().contains("Network is unreachable"));
 
 			if (retry) {
 				Thread.sleep(6000);
 				return execute(method);
 			}
-			throw e;
+			throw t;
 		}
 	}
 

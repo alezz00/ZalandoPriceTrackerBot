@@ -48,8 +48,8 @@ public class Runner {
 		final Runnable runnable = () -> {
 			try {
 				run();
-			} catch (final Exception e) {
-				utility.insertErrorLog(e, bot);
+			} catch (final Throwable t) {
+				utility.insertErrorLog(t, bot);
 			}
 		};
 		scheduler.scheduleWithFixedDelay(runnable, 0, delay, timeUnit);
@@ -103,7 +103,6 @@ public class Runner {
 					priceHistory.add(item.getPriceHistory().get(0));
 				}
 				item.setPriceHistory(priceHistory);
-				item.setBackInStockNotifiedPrice(oldItem.getBackInStockNotifiedPrice());
 
 				// Add fetched item to the new list
 				trackedItems.add(item);
@@ -148,8 +147,7 @@ public class Runner {
 		final String newPrice = newItem.getPrice();
 
 		final boolean couponAdded = !oldItem.isHasCoupon() && newItem.isHasCoupon();
-		final String oldPriceToShow = priceLowered(oldItem, newItem);
-		final boolean priceLowered = oldPriceToShow != null;
+		final boolean priceLowered = priceLowered(oldItem, newItem);
 
 		if (!priceLowered && !couponAdded) { return Optional.empty(); }
 
@@ -161,7 +159,7 @@ public class Runner {
 		final String headerString = String.join(" + ", headers) + "!";
 
 		final List<String> prices = new ArrayList<>();
-		if (priceLowered) { prices.add(oldPriceToShow); }
+		if (priceLowered) { prices.add(oldItem.getPrice()); }
 		prices.add(newPrice + (couponAdded ? " + coupon" : ""));
 		final String priceString = String.join(" ---> ", prices);
 
@@ -176,38 +174,15 @@ public class Runner {
 		return Optional.of(message);
 	}
 
-	/** Checks if the price lowered and returns the previous price. */
-	private static String priceLowered(TrackedItem oldItem, TrackedItem newItem) {
+	/** Checks if the price lowered. */
+	private static boolean priceLowered(TrackedItem oldItem, TrackedItem newItem) {
 		final String oldPriceString = oldItem.getPrice();
 		final String newPriceString = newItem.getPrice();
 		final Double oldPrice = Double.valueOf(oldPriceString.replace(",", "."));
 		final Double newPrice = Double.valueOf(newPriceString.replace(",", "."));
 
-		final boolean lowered = oldPrice - newPrice > 1;
-
-		// if lower than the previous -> ok
-		if (lowered) {
-			return oldPriceString;
-		}
-
-		// or it can be the same price but back in stock, but has to be lower than the second-last
-		// this can happen if the item goes from 120 to 100 while not in stock, and then goes back in stock
-		if (Objects.equals(oldPriceString, newPriceString)) {
-			final List<PriceHistory> oldHistory = new ArrayList<>(oldItem.getPriceHistory());
-
-			oldHistory.remove(oldHistory.size() - 1);
-			if (oldHistory.isEmpty()) { return null; }
-			final String firstPreviousString = oldHistory.get(oldHistory.size() - 1).getPrice();
-			final Double firstPrevious = Double.valueOf(firstPreviousString.replace(",", "."));
-
-			// in this special case i also check the last notified price, to avoid double notifications
-			if (!oldItem.isAvailable() && (firstPrevious - newPrice > 1) && !Objects.equals(newPriceString, oldItem.getBackInStockNotifiedPrice())) {
-				newItem.setBackInStockNotifiedPrice(newPriceString);
-				return firstPreviousString;
-			}
-		}
-
-		return null;
+		// ignore price changes smaller than 1 unit
+		return oldPrice - newPrice > 1;
 	}
 
 }

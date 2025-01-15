@@ -9,11 +9,10 @@ public class TrackedItem {
 	private final String name;
 	private final String url;
 	private final String size;
-	private final String price;
+	private String price;
 	private final String quantity;
 	private final boolean available;
 	private final boolean hasCoupon;
-	private String backInStockNotifiedPrice;
 	private ArrayList<PriceHistory> priceHistory = new ArrayList<>();
 
 	public TrackedItem(String uuid, String name, String url, String size, String price, String quantity, boolean available, boolean hasCoupon) {
@@ -26,7 +25,6 @@ public class TrackedItem {
 		this.quantity = quantity;
 		this.available = available;
 		this.hasCoupon = hasCoupon;
-		this.backInStockNotifiedPrice = null;
 	}
 
 	public String getUuid() {
@@ -39,6 +37,10 @@ public class TrackedItem {
 
 	public String getPrice() {
 		return price;
+	}
+
+	public void setPrice(String price) {
+		this.price = price;
 	}
 
 	public String getQuantity() {
@@ -69,14 +71,6 @@ public class TrackedItem {
 		return available;
 	}
 
-	public String getBackInStockNotifiedPrice() {
-		return backInStockNotifiedPrice;
-	}
-
-	public void setBackInStockNotifiedPrice(String backInStockNotifiedPrice) {
-		this.backInStockNotifiedPrice = backInStockNotifiedPrice;
-	}
-
 	public boolean anyChange(TrackedItem item) {
 		return !Objects.equals(price, item.getPrice())//
 				|| !Objects.equals(quantity, item.getQuantity())//
@@ -87,7 +81,7 @@ public class TrackedItem {
 	@Override
 	public String toString() {
 		return "TrackedItem [uuid=" + uuid + ", name=" + name + ", url=" + url + ", size=" + size + ", price=" + price + ", quantity=" + quantity + ", available="
-				+ available + ", hasCoupon=" + hasCoupon + ", backInStockNotifiedPrice=" + backInStockNotifiedPrice + ", priceHistory=" + priceHistory + "]";
+				+ available + ", hasCoupon=" + hasCoupon + ", priceHistory=" + priceHistory + "]";
 	}
 
 	public static class PriceHistory {
