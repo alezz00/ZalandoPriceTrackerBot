@@ -1,7 +1,10 @@
 package runner;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -119,8 +122,7 @@ public class Runner {
 				for (final String notification : notifications) {
 					bot.sendMessage(userId, notification);
 				}
-				final String info = itemsToNotify.stream().map(TrackedItem::getName).collect(Collectors.joining("\n"));
-				utility.insertLog("Message sent: prices lowered for user: %s\n%s".formatted(userId, info));
+				utility.insertLog("Message sent: prices lowered for user: %s".formatted(userId));
 			}
 
 			// Update the items file
@@ -145,13 +147,16 @@ public class Runner {
 		if (!newItem.isAvailable()) { return Optional.empty(); }
 
 		final String newPrice = newItem.getPrice();
+		final List<PriceHistory> priceHistory = newItem.getPriceHistory();
 
 		final boolean couponAdded = !oldItem.isHasCoupon() && newItem.isHasCoupon();
 		final boolean priceLowered = priceLowered(oldItem, newItem);
 
 		if (!priceLowered && !couponAdded) { return Optional.empty(); }
 
-		final String history = newItem.getPriceHistory().stream().map(PriceHistory::getPrice).collect(Collectors.joining(" -> "));
+		final String history = priceHistory.size() > 20 //
+				? describePriceHistory(priceHistory)
+				: priceHistory.stream().map(PriceHistory::getStringPrice).collect(Collectors.joining(" -> "));
 
 		final List<String> headers = new ArrayList<>();
 		if (priceLowered) { headers.add("Price lowered"); }
@@ -163,12 +168,15 @@ public class Runner {
 		prices.add(newPrice + (couponAdded ? " + coupon" : ""));
 		final String priceString = String.join(" ---> ", prices);
 
+		utility.insertLog(newItem.getName() + " - " + priceString);
+
 		final String message = """
 				%s
 				%s
 				<b>%s</b>
 				quantity: %s
-				price history: %s
+				<b>price history:</b>
+				%s
 				%s""".formatted(headerString, newItem.getName(), priceString, newItem.getQuantity(), history, newItem.getUrl());
 
 		return Optional.of(message);
@@ -183,6 +191,29 @@ public class Runner {
 
 		// ignore price changes smaller than 1 unit
 		return oldPrice - newPrice > 1;
+	}
+
+	private static String describePriceHistory(List<PriceHistory> list) {
+
+		final PriceHistory min = Collections.min(list, Comparator.comparing(PriceHistory::getPrice));
+		final PriceHistory max = Collections.max(list, Comparator.comparing(PriceHistory::getPrice));
+
+		final int average90Days = (int) list.stream()//
+				.filter(e -> e.getLocalDate().isAfter(LocalDate.now().plusDays(-91)))//
+				.mapToDouble(PriceHistory::getPrice)//
+				.average().getAsDouble();
+
+		final int average180Days = (int) list.stream()//
+				.filter(e -> e.getLocalDate().isAfter(LocalDate.now().plusDays(-181)))//
+				.mapToDouble(PriceHistory::getPrice)//
+				.average().getAsDouble();
+
+		return """
+				min: %s - %s
+				max: %s - %s
+				average last 90 days: %s
+				average last 180 days: %s""" //
+				.formatted(min.getPrice(), min.getDate(), max.getPrice(), max.getDate(), average90Days, average180Days);
 	}
 
 }

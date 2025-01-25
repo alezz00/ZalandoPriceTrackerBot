@@ -1,5 +1,6 @@
 package pojo;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -94,13 +95,22 @@ public class TrackedItem {
 			this.date = date;
 		}
 
-		public String getPrice() {
+		public String getStringPrice() {
 			return price;
+		}
+
+		public Double getPrice() {
+			return Double.valueOf(price.replace(",", "."));
 		}
 
 		public String getDate() {
 			return date;
 		}
+
+		public LocalDate getLocalDate() {
+			final String[] split = date.split("-");
+			return LocalDate.of(Integer.valueOf(split[2]), Integer.valueOf(split[1]), Integer.valueOf(split[0]));
+		} // getLocalDate
 
 		@Override
 		public String toString() {
