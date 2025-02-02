@@ -73,7 +73,6 @@ public class Runner {
 
 			final List<TrackedItem> trackedItems = new ArrayList<>();
 			final List<String> notifications = new ArrayList<>();
-			final List<TrackedItem> itemsToNotify = new ArrayList<>();
 
 			// fetch each item
 			for (final TrackedItem oldItem : utility.getTrackedItems(userId)) {
@@ -82,10 +81,14 @@ public class Runner {
 				try {
 					item = utility.getItemFromUrl(userId, oldItem, bot);
 				} catch (final ItemRemovedException e) {
-					bot.sendMessage(userId, """
-							"It appears that the item \"%s\" is no longer available at the specified url :("
-							Consider deleting the item from your list if this error persists""".formatted(oldItem.getName()));
-					continue;
+					item = oldItem;
+					item.incrementNotFoundCount();
+					if (item.getNotFoundCount() >= 5) {
+						bot.sendMessage(userId, """
+								"It appears that the item \"%s\" is no longer available at the specified url :("
+								Consider deleting the item from your list if this error persists""".formatted(oldItem.getName()));
+						continue;
+					}
 				} catch (final SizeRemovedException e) {
 					bot.sendMessage(userId, """
 							"It appears that the size %s is no longer available for item \"%s\":("
@@ -111,10 +114,7 @@ public class Runner {
 				trackedItems.add(item);
 
 				// Check if the item needs to be notified
-				buildItemNotification(oldItem, item).ifPresent(not -> {
-					notifications.add(not);
-					itemsToNotify.add(item);
-				});
+				buildItemNotification(oldItem, item).ifPresent(notifications::add);
 			}
 
 			// Send the notifications

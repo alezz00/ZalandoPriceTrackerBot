@@ -14,6 +14,7 @@ public class TrackedItem {
 	private final String quantity;
 	private final boolean available;
 	private final boolean hasCoupon;
+	private int notFoundCount = 0;
 	private ArrayList<PriceHistory> priceHistory = new ArrayList<>();
 
 	public TrackedItem(String uuid, String name, String url, String size, String price, String quantity, boolean available, boolean hasCoupon) {
@@ -72,11 +73,20 @@ public class TrackedItem {
 		return available;
 	}
 
+	public int getNotFoundCount() {
+		return notFoundCount;
+	}
+
+	public void incrementNotFoundCount() {
+		notFoundCount++;
+	}
+
 	public boolean anyChange(TrackedItem item) {
 		return !Objects.equals(price, item.getPrice())//
 				|| !Objects.equals(quantity, item.getQuantity())//
 				|| !Objects.equals(available, item.isAvailable())//
-				|| !Objects.equals(hasCoupon, item.isHasCoupon());
+				|| !Objects.equals(hasCoupon, item.isHasCoupon())//
+				|| !Objects.equals(notFoundCount, item.getNotFoundCount());
 	}
 
 	@Override
