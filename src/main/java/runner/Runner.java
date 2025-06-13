@@ -90,10 +90,14 @@ public class Runner {
 						continue;
 					}
 				} catch (final SizeRemovedException e) {
-					bot.sendMessage(userId, """
-							"It appears that the size %s is no longer available for item \"%s\":("
-							Consider deleting the item from your list if this error persists""".formatted(oldItem.getSize(), oldItem.getName()));
-					continue;
+					item = oldItem;
+					item.incrementSizeNotFoundCount();
+					if (item.getSizeNotFoundCount() >= 5) {
+						bot.sendMessage(userId, """
+								"It appears that the size %s is no longer available for item \"%s\":("
+								Consider deleting the item from your list if this error persists""".formatted(oldItem.getSize(), oldItem.getName()));
+						continue;
+					}
 				} catch (final Throwable t) {
 					// if unmanaged exception occurred don't stop and continue with other items
 					trackedItems.add(oldItem);

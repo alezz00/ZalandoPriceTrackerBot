@@ -235,7 +235,8 @@ public class LogicUtility {
 
 		final String simplesJson = "{" + simples + stringedArray + "}";
 		final Sizes sizes = new Gson().fromJson(simplesJson, Sizes.class);
-		return sizes.simples;
+		final List<Size> toReturn = sizes.simples;
+		return toReturn == null ? Collections.emptyList() : toReturn;
 	}
 
 	/**
