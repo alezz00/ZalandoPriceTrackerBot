@@ -75,6 +75,7 @@ public class Runner {
 			final List<String> notifications = new ArrayList<>();
 
 			// fetch each item
+			if (utility.getTrackedItems(userId).isEmpty()) { continue; }
 			for (final TrackedItem oldItem : utility.getTrackedItems(userId)) {
 				totalItemsSize++;
 				TrackedItem item;

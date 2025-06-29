@@ -186,11 +186,13 @@ public class LogicUtility {
 	private HttpResponse<String> httpGet(String url) throws Exception {
 		final HttpClient client = HttpClient.newHttpClient();
 		final HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-				.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0")//
-				.setHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8")//
+				.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")//
+				.setHeader("Accept",
+						"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")//
 				.setHeader("Sec-Fetch-Dest", "document")//
 				.setHeader("Sec-Fetch-Mode", "navigate")//
-				.setHeader("Sec-Fetch-Site", "cross-site")//
+				.setHeader("Sec-Fetch-Site", "same-origin")//
+				.setHeader("Accept-Encoding", "deflate")//
 				.build();
 
 		return client.send(request, BodyHandlers.ofString());
@@ -250,12 +252,16 @@ public class LogicUtility {
 		final String size = item.getSize();
 
 		final HttpResponse<String> response = httpGet(url);
+		final int responseStatus = response.statusCode();
 		final String responseBody = response.body();
 		final List<Size> sizes = getSizesFromBody(responseBody);
 
-		if (response.statusCode() == 404 || sizes.isEmpty()) {
-			throw new ItemRemovedException();
-		} // if
+		if (sizes.isEmpty()) {
+			if (responseStatus == 404) { throw new ItemRemovedException(); }
+			throw new Exception("""
+					Item not fetched correctly. Status code: %s
+					%s - %s""".formatted(responseStatus, item.getName(), item.getUrl()));
+		}
 
 		final Size found = sizes.stream().filter(s -> Objects.equals(s.size, size)).findFirst().orElseThrow(SizeRemovedException::new);
 		final Offer offer = found.offer;
