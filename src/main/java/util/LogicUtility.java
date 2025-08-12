@@ -24,15 +24,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.yaml.snakeyaml.Yaml;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import bot.TelegramBot;
 import exceptions.ItemRemovedException;
 import exceptions.SizeRemovedException;
 import pojo.Offer;
@@ -43,7 +46,6 @@ import pojo.Sizes;
 import pojo.TrackedItem;
 import pojo.TrackedItem.PriceHistory;
 import pojo.TrackedItems;
-import runner.TelegramBot;
 
 /**
  * Utility class for the bot's logic
@@ -237,8 +239,9 @@ public class LogicUtility {
 
 		final String simplesJson = "{" + simples + stringedArray + "}";
 		final Sizes sizes = new Gson().fromJson(simplesJson, Sizes.class);
-		final List<Size> toReturn = sizes.simples;
-		return toReturn == null ? Collections.emptyList() : toReturn;
+		final List<Size> toReturn = sizes.simples == null ? Collections.emptyList() : sizes.simples;
+		if (toReturn.stream().allMatch(s -> s.offer == null) && partial.contains(simples)) { return getSizesFromBody(partial); }
+		return toReturn;
 	}
 
 	/**
@@ -306,6 +309,43 @@ public class LogicUtility {
 		};
 
 		return Optional.ofNullable(substring);
+	}
+
+	public Optional<Pair<String, String>> getNameAndUrlFromMessage(String message) {
+		final List<String> split = Stream.of(message.split("\n"))//
+				.map(String::trim)//
+				.filter(s -> !s.isEmpty())//
+				.toList();
+
+		// if 1 -> i'm expecting the url alone
+		if (split.size() == 1) {
+			final String url = split.get(0);
+			if (!isValidUrl(url)) { return Optional.empty(); }
+			final URI uri = URI.create(url);
+
+			// build the name from the url
+			String name = Stream.of(uri.getPath().replace("/", "").split("-"))//
+					.filter(s -> s.chars().allMatch(Character::isAlphabetic))//
+					.distinct()//
+					.collect(Collectors.joining(" "));
+
+			name = name.length() > 50 ? name.substring(0, 49) : name;
+			return Optional.of(Pair.of(name, url));
+		}
+
+		// if 2 -> i'm expecting an alias for the item in the first row and the url in the second row
+		if (split.size() == 2) {
+			final String name = split.get(0);
+			final String url = split.get(1);
+			if (!isValidUrl(url)) { return Optional.empty(); }
+			return Optional.of(Pair.of(name, url));
+		}
+
+		return Optional.empty();
+	}
+
+	protected boolean isValidUrl(String url) {
+		return url.toLowerCase().startsWith("https://www.zalando.");
 	}
 
 	/**

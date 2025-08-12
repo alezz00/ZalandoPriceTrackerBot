@@ -1,4 +1,4 @@
-package runner;
+package bot;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
@@ -187,12 +188,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 			alertText = "Bad request";
 		} else {
 			alertText = "Item added!";
-			final List<String> split = Stream.of(message.getReplyToMessage().getText().split("\n"))//
-					.map(String::trim)//
-					.filter(s -> !s.isEmpty())//
-					.toList();
-			final String name = split.get(0);
-			final String url = split.get(1);
+
+			final Pair<String, String> nameAndUrl = utility.getNameAndUrlFromMessage(message.getReplyToMessage().getText()).orElseThrow();
+			final String name = nameAndUrl.getLeft();
+			final String url = nameAndUrl.getRight();
 
 			final TrackedItem toAddTemp = new TrackedItem(UUID.randomUUID().toString(), name, url, size, null, null, false, false);
 
@@ -234,16 +233,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 	/** Checks if the user is trying to add a new item and returns the available sizes. */
 	private void addItem(Message message) throws Exception {
 
-		// i'm expecting an alias for the item in the first row and the url in the second row
-		final List<String> split = Stream.of(message.getText().split("\n"))//
-				.map(String::trim)//
-				.filter(s -> !s.isEmpty())//
-				.toList();
-
-		if (split.size() != 2) { return; }
-
-		final String url = split.get(1);
-		if (!url.contains("https://") || !url.contains("zalando.")) { return; }
+		final Pair<String, String> nameAndUrl = utility.getNameAndUrlFromMessage(message.getText()).orElse(null);
+		if (nameAndUrl == null) { return; }
+		final String url = nameAndUrl.getRight();
 
 		final InlineKeyboardMarkupBuilder keyboard = InlineKeyboardMarkup.builder();
 

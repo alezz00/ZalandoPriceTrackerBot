@@ -1,4 +1,4 @@
-package runner;
+package main;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import bot.TelegramBot;
 import exceptions.ItemRemovedException;
 import exceptions.SizeRemovedException;
 import pojo.TrackedItem;
@@ -28,7 +29,7 @@ import util.LogicUtility;
  * <li>Instantiates the bot</li>
  * <li>Schedules the logic to run every 60 minutes</li>
  */
-public class Runner {
+public class Main {
 
 	private static LogicUtility utility;
 	private static TelegramBot bot = null;
@@ -188,7 +189,7 @@ public class Runner {
 	}
 
 	/** Checks if the price lowered. */
-	private static boolean priceLowered(TrackedItem oldItem, TrackedItem newItem) {
+	protected static boolean priceLowered(TrackedItem oldItem, TrackedItem newItem) {
 		final String oldPriceString = oldItem.getPrice();
 		final String newPriceString = newItem.getPrice();
 		final Double oldPrice = Double.valueOf(oldPriceString.replace(",", "."));

@@ -24,17 +24,16 @@ dependencies {
 	implementation group: 'org.yaml', 				name: 'snakeyaml',		version: '2.2'
 	
 		
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
-	//testImplementation group: 'org.mockito', name: 'mockito-core',			version: '4.8.0'
-	//testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '4.8.0'
-	//testImplementation group: 'org.mockito', name: 'mockito-inline',		version: '4.8.0'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.9.3'
+
 }
 
 jar {
 	exclude "META-INF/**"
 	exclude "module-info.class"
 	 manifest {
-        attributes 'Main-Class': 'runner.Runner'
+        attributes 'Main-Class': 'main.Main'
     }
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
